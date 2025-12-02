@@ -1,0 +1,35 @@
+# Talos Cluster Configuration Template
+# 
+# This is a template for advanced Talos configuration using talhelper.
+# For basic setup, Terraform handles all configuration automatically.
+# 
+# To use:
+# 1. Copy this file: cp cluster.yaml.example cluster.yaml
+# 2. Edit cluster.yaml with your specific values
+# 3. Encrypt with SOPS: sops --encrypt --in-place cluster.yaml
+# 
+# See docs/infrastructure/talos.md for detailed configuration guide
+
+clusterName: datacluster
+endpoint: https://CONTROL_PLANE_PUBLIC_IP:6443
+talosVersion: v1.11.5
+
+nodes:
+  - hostname: control-plane-1
+    ipAddress: CONTROL_PLANE_PRIVATE_IP
+    controlPlane: true
+    installDisk: /dev/sda
+    
+  - hostname: worker-1
+    ipAddress: WORKER_PRIVATE_IP
+    controlPlane: false
+    installDisk: /dev/sda
+
+# Additional customization options (optional)
+patches:
+  # Example: Enable kernel modules
+  - |-
+    machine:
+      kernel:
+        modules:
+          - name: br_netfilter

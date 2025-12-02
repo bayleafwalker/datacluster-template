@@ -1,0 +1,62 @@
+{
+  "type": "record",
+  "name": "CuratedRecord",
+  "namespace": "com.datacluster.pipeline_name",
+  "doc": "Processed output data schema - replace with your actual schema",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Unique identifier"
+    },
+    {
+      "name": "date",
+      "type": "string",
+      "doc": "Partition key - date in YYYY-MM-DD format"
+    },
+    {
+      "name": "entity_type",
+      "type": {
+        "type": "enum",
+        "name": "EntityType",
+        "symbols": ["TYPE_A", "TYPE_B", "TYPE_C"]
+      },
+      "doc": "Classification of entity"
+    },
+    {
+      "name": "metrics",
+      "type": {
+        "type": "record",
+        "name": "Metrics",
+        "fields": [
+          {"name": "count", "type": "long"},
+          {"name": "sum", "type": "double"},
+          {"name": "avg", "type": "double"}
+        ]
+      },
+      "doc": "Aggregated metrics"
+    },
+    {
+      "name": "attributes",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "default": {},
+      "doc": "Additional attributes as key-value pairs"
+    },
+    {
+      "name": "processing_metadata",
+      "type": {
+        "type": "record",
+        "name": "ProcessingMetadata",
+        "fields": [
+          {"name": "pipeline_version", "type": "string"},
+          {"name": "processed_at", "type": "long", "logicalType": "timestamp-millis"},
+          {"name": "source_count", "type": "long", "doc": "Number of source records aggregated"}
+        ]
+      },
+      "doc": "Metadata about processing"
+    }
+  ]
+}

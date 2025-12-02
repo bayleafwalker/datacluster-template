@@ -1,0 +1,79 @@
+# Pipeline Configuration
+
+# Pipeline metadata
+name: pipeline_name
+version: v1.0
+owner: data_platform_team
+description: "Brief description of what this pipeline does"
+
+# Storage paths
+storage:
+  landing:
+    input: "s3a://datacluster-landing/raw/source_system/"
+    output: "s3a://datacluster-landing/processed/pipeline_name/"
+  curated:
+    path: "s3a://datacluster-curated/pipeline_name/v1/"
+  archive:
+    path: "s3a://datacluster-archive/pipeline_name/"
+    retention_days: 365
+
+# Processing schedule
+schedule:
+  landing: "0 * * * *"  # Every hour
+  transform: "15 * * * *"  # 15 minutes after landing
+  integration: "30 * * * *"  # 30 minutes after landing
+
+# Data quality thresholds
+quality:
+  completeness_threshold: 0.95
+  duplicate_tolerance: 0.001  # 0.1%
+  null_checks:
+    - id
+    - timestamp
+    - source_system
+  value_ranges:
+    # column_name: {min: value, max: value}
+    # Example:
+    # age: {min: 0, max: 120}
+
+# Resource allocation
+resources:
+  landing:
+    driver:
+      cores: 1
+      memory: "2048m"
+    executor:
+      cores: 1
+      instances: 2
+      memory: "2048m"
+  transform:
+    driver:
+      cores: 2
+      memory: "4096m"
+    executor:
+      cores: 2
+      instances: 4
+      memory: "4096m"
+  integration:
+    driver:
+      cores: 1
+      memory: "2048m"
+    executor:
+      cores: 1
+      instances: 2
+      memory: "2048m"
+
+# Monitoring
+monitoring:
+  alerts:
+    latency_threshold_seconds: 3600  # 1 hour
+    error_rate_threshold: 0.01  # 1%
+  dashboards:
+    - name: "Pipeline Overview"
+      url: "http://grafana/d/pipeline-xyz"
+
+# SLAs
+sla:
+  latency_minutes: 60
+  freshness: "Daily by 02:00 UTC"
+  availability: 0.999

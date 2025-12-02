@@ -1,0 +1,279 @@
+# Hetzner Cloud Provisioning
+
+This guide covers deploying the datacluster on Hetzner Cloud infrastructure.
+
+## Architecture
+
+```
+Hetzner Cloud (hel1 region)
+├── Private Network (10.0.0.0/16)
+│   ├── Control Plane: 10.0.0.11 (CPX11: 2 vCPU, 2GB RAM)
+│   └── Worker Node:   10.0.0.21 (CPX21: 3 vCPU, 4GB RAM)
+├── Volumes
+│   ├── Control: 50GB  (etcd, local storage)
+│   └── Worker:  100GB (Spark checkpoints, local data)
+└── Firewall: WireGuard VPN only
+```
+
+**Cost: ~€29/month** (pause by destroying servers when idle)
+
+## Prerequisites
+
+1. **Hetzner Cloud account** with payment method
+2. **API token**: Console → Security → API Tokens → Generate
+3. **WireGuard VPN** configured on your workstation
+4. **Tools**: `terraform`, `talosctl`, `talhelper`, `sops`, `age`
+
+## Workflow
+
+### 1. Provision Infrastructure
+
+```bash
+cd terraform
+terraform init
+cp terraform.tfvars.example terraform.tfvars
+
+# Edit terraform.tfvars with your Hetzner token, SSH key, WireGuard subnet
+nano terraform.tfvars
+
+# Encrypt before committing (REQUIRED)
+sops --encrypt --age $(cat ../age.key | grep public | awk '{print $4}') \
+  terraform.tfvars > terraform.tfvars.enc
+
+# Deploy
+export SOPS_AGE_KEY_FILE=../age.key
+sops -d terraform.tfvars.enc > terraform.tfvars
+terraform apply
+
+# Note control_plane_private_ip and worker_private_ip from output
+```
+
+### 2. Flash Talos OS
+
+Hetzner servers boot with Ubuntu by default. Replace with Talos:
+
+```bash
+# Get control plane public IP from Terraform output
+CONTROL_IP=$(terraform output -raw control_plane_public_ip)
+
+# Boot into rescue mode
+hcloud server enable-rescue datacluster-control-1
+hcloud server reboot datacluster-control-1
+
+# SSH into rescue and flash Talos (repeat for worker)
+ssh root@$CONTROL_IP
+
+# In rescue environment:
+wget -O /tmp/talos.raw.xz https://github.com/siderolabs/talos/releases/download/v1.7.2/hcloud-amd64.raw.xz
+xz -d -c /tmp/talos.raw.xz | dd of=/dev/sda bs=4M && sync
+reboot
+```
+
+### 3. Configure Cluster
+
+Update `talos/cluster.yaml` with private IPs from Terraform:
+
+```yaml
+endpoint: https://10.0.0.11:6443
+nodes:
+  - hostname: datacluster-control-1
+    ipAddress: 10.0.0.11  # From terraform output
+  - hostname: datacluster-worker-1
+    ipAddress: 10.0.0.21  # From terraform output
+```
+
+Replace `REPLACE_HCLOUD_TOKEN` with your Hetzner API token (for CSI driver).
+
+**CRITICAL: Encrypt before committing:**
+```bash
+sops --encrypt --in-place talos/cluster.yaml
+```
+
+### 4. Generate & Apply Talos Configs
+
+```bash
+# Decrypt cluster.yaml if needed
+sops -d talos/cluster.yaml > talos/cluster-decrypted.yaml
+
+# Generate configs
+talhelper genconfig -o talos/generated talos/cluster-decrypted.yaml
+
+# Apply to nodes (use public IPs from Terraform)
+CONTROL_PUB_IP=$(cd terraform && terraform output -raw control_plane_public_ip)
+WORKER_PUB_IP=$(cd terraform && terraform output -raw worker_public_ip)
+
+talosctl apply-config --insecure --nodes $CONTROL_PUB_IP \
+  --file talos/generated/datacluster-control-1.yaml
+talosctl bootstrap --nodes $CONTROL_PUB_IP
+
+talosctl apply-config --insecure --nodes $WORKER_PUB_IP \
+  --file talos/generated/datacluster-worker-1.yaml
+
+# Fetch kubeconfig
+talosctl kubeconfig --nodes $CONTROL_PUB_IP .
+export KUBECONFIG=$PWD/kubeconfig
+```
+
+### 5. Setup WireGuard Access
+
+Configure WireGuard on both nodes to join your VPN:
+
+```bash
+# Patch control plane with WireGuard config
+talosctl -n $CONTROL_PUB_IP patch machineconfig \
+  --patch @wireguard-patch.yaml
+
+# Example wireguard-patch.yaml:
+# machine:
+#   network:
+#     interfaces:
+#       - interface: wg0
+#         addresses:
+#           - 10.200.0.11/24
+#         wireguard:
+#           privateKey: <encrypted-key>
+#           peers:
+#             - publicKey: <peer-public-key>
+#               endpoint: <peer-endpoint>
+#               allowedIPs: ["10.200.0.0/16"]
+```
+
+Verify connectivity:
+```bash
+kubectl get nodes
+# Should show both nodes Ready
+```
+
+### 6. Bootstrap Flux
+
+```bash
+flux bootstrap github \
+  --owner=<your-github-username> \
+  --repository=datacluster \
+  --path=clusters/hetzner-prod \
+  --personal
+```
+
+Flux will deploy all infrastructure components from `infrastructure/`.
+
+## Cost Optimization
+
+### Pause Cluster (Keep Data)
+
+```bash
+cd terraform
+terraform destroy -target=hcloud_server.control_plane -target=hcloud_server.worker
+# Volumes remain, only €15/month
+```
+
+### Resume Cluster
+
+```bash
+terraform apply
+# Re-flash Talos and reapply configs (steps 2-4)
+```
+
+### Full Destruction
+
+```bash
+terraform destroy
+# Removes everything, including data volumes
+```
+
+## Hetzner-Specific Features
+
+### Volumes (Hetzner CSI Driver)
+
+Managed by Talos inline manifest in `cluster.yaml`:
+
+```yaml
+inlineManifests:
+  - name: hcloud-csi
+    contents: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: hcloud
+        namespace: kube-system
+      stringData:
+        token: <hetzner-api-token>
+```
+
+StorageClass auto-created:
+```bash
+kubectl get storageclass hcloud-volumes
+```
+
+### Object Storage (S3-compatible)
+
+Create bucket at Console → Object Storage:
+- Region: hel1
+- Name: `datacluster-spark`
+- Cost: €0.023/GB/month
+
+Store credentials in K8s Secret:
+```bash
+kubectl create secret generic s3-credentials \
+  --from-literal=access-key=<key> \
+  --from-literal=secret-key=<secret> \
+  --namespace=spark-operator
+```
+
+Reference in SparkApplications:
+```yaml
+spec:
+  hadoopConf:
+    fs.s3a.endpoint: https://hel1.your-object-storage.hetzner.com
+    fs.s3a.access.key: <from-secret>
+    fs.s3a.secret.key: <from-secret>
+```
+
+## Troubleshooting
+
+### Can't reach API server
+
+- Verify WireGuard is active: `wg show`
+- Check firewall rules: `hcloud firewall describe datacluster-firewall`
+- Ensure VPN subnet matches `terraform.tfvars` and `talos/cluster.yaml`
+
+### Node not joining
+
+- Check Talos logs: `talosctl -n <node-ip> logs`
+- Verify network: `talosctl -n <node-ip> get members`
+- Re-apply config: `talosctl -n <node-ip> apply-config --file ...`
+
+### CSI driver not working
+
+- Check secret: `kubectl get secret -n kube-system hcloud`
+- Verify API token has read/write permissions
+- Check CSI pod logs: `kubectl logs -n kube-system -l app=hcloud-csi-controller`
+
+## Scaling
+
+### Add Worker Nodes
+
+1. Edit `terraform/main.tf`, add `hcloud_server.worker_2`
+2. `terraform apply`
+3. Flash Talos on new node
+4. Add node config to `talos/cluster.yaml`
+5. Regenerate and apply configs
+
+### Upgrade Server Types
+
+```bash
+# Stop Spark jobs first
+kubectl scale deployment --all --replicas=0 -n spark-operator
+
+# In Terraform
+terraform apply -var="worker_type=cpx31"  # 4 vCPU, 8GB RAM
+
+# Re-flash Talos on resized node
+```
+
+## Monitoring Costs
+
+Track via Hetzner Console → Billing or use API:
+
+```bash
+hcloud server list -o json | jq '.[].server_type.prices[] | select(.location=="hel1") | .price_monthly.gross'
+```

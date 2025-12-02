@@ -1,0 +1,198 @@
+# Project Metadata
+# This file defines all project-specific configuration, ownership, and documentation
+# Required in every project root directory
+
+# Basic Information
+name: "project-name"           # Lowercase with hyphens (e.g., user-analytics)
+version: "0.1.0"               # Semantic versioning (MAJOR.MINOR.PATCH)
+description: "Brief description of what this project does"
+
+# Ownership & Contacts
+owner:
+  team: "team-name"            # Owning team name
+  slack: "#team-channel"       # Slack channel for alerts/discussions
+  email: "team@company.com"    # Team email or mailing list
+  on_call: "https://pagerduty.com/escalation-policy"  # On-call rotation
+
+# Technical Dependencies
+dependencies:
+  data_platform_common: "^0.5.0"    # SemVer range for common library
+  python: ">=3.9,<3.12"              # Python version constraint
+  spark: "3.5.0"                     # Apache Spark version
+  delta_lake: "3.0.0"                # Delta Lake version (if used)
+  # Add other critical dependencies
+
+# External System Integrations
+integrations:
+  sources:                      # Data sources this project reads from
+    - type: "kafka"             # kafka | s3 | jdbc | files | api
+      name: "main-events"
+      topic: "events.user.clickstream"
+      cluster: "production-kafka"
+      schema_registry: "https://schema-registry.prod"
+      
+    - type: "s3"
+      name: "historical-data"
+      bucket: "s3://landing/historical"
+      format: "parquet"
+      
+  destinations:                 # Where this project writes data
+    - type: "delta"
+      name: "curated-analytics"
+      path: "s3://curated/project-name"
+      
+    - type: "kafka"
+      name: "results-topic"
+      topic: "analytics.results.project-name"
+
+# Resource Requirements (per stage)
+resources:
+  landing:
+    driver:
+      cpu: "1"                  # CPU cores
+      memory: "2Gi"             # Memory
+    executors:
+      count: 3                  # Number of executors
+      cpu: "2"
+      memory: "4Gi"
+      
+  transform:
+    driver:
+      cpu: "2"
+      memory: "4Gi"
+    executors:
+      count: 5
+      cpu: "4"
+      memory: "8Gi"
+      
+  integration:
+    driver:
+      cpu: "1"
+      memory: "2Gi"
+    executors:
+      count: 2
+      cpu: "2"
+      memory: "4Gi"
+
+# Scheduling (cron format)
+schedule:
+  landing: "*/15 * * * *"       # Every 15 minutes
+  transform: "0 */1 * * *"      # Hourly
+  integration: "0 2 * * *"      # Daily at 2 AM UTC
+  # Use "manual" for on-demand pipelines
+
+# Service Level Agreements
+sla:
+  latency: "30m"                # Data must be available within X time
+  availability: "99.9%"         # Uptime target
+  data_quality_threshold: 0.95  # Minimum quality score (0.0-1.0)
+  max_processing_time: "2h"     # Maximum allowed processing time
+
+# Monitoring Configuration
+monitoring:
+  prometheus: true              # Enable Prometheus metrics
+  grafana_dashboard: "project-name-dashboard"  # Dashboard ID/URL
+  alerts:
+    - name: "high-failure-rate"
+      condition: "failure_rate > 0.1"
+      threshold: 0.1
+      severity: "critical"      # info | warning | critical
+      
+    - name: "data-quality-drop"
+      condition: "quality_score < 0.95"
+      threshold: 0.95
+      severity: "warning"
+      
+    - name: "processing-timeout"
+      condition: "duration > 2h"
+      threshold: "2h"
+      severity: "critical"
+
+# Storage Configuration
+storage:
+  landing:
+    path: "s3://datacluster-data/landing/project-name"
+    retention: "7d"             # Keep for 7 days
+    format: "avro"              # avro | parquet | json | csv
+    compression: "snappy"       # snappy | gzip | none
+    
+  staging:
+    path: "s3://datacluster-data/staging/project-name"
+    retention: "3d"
+    format: "parquet"
+    
+  curated:
+    path: "s3://datacluster-data/curated/project-name"
+    retention: "permanent"      # Or "365d", "2y", etc.
+    format: "delta"
+    
+  checkpoints:
+    path: "s3://datacluster-data/checkpoints/project-name"
+    retention: "30d"
+    
+  archive:
+    path: "s3://datacluster-data/archive/project-name"
+    retention: "90d"
+    format: "parquet"
+    compression: "gzip"
+
+# Testing Configuration
+testing:
+  unit_tests: true
+  integration_tests: true
+  test_data_generator: "tests/generators/test_data.py"
+  sample_data_path: "tests/fixtures/"
+  test_coverage_threshold: 0.80  # 80% code coverage required
+
+# Documentation Locations
+documentation:
+  main: "docs/README.md"
+  architecture: "docs/architecture.md"
+  runbook: "docs/runbook.md"
+  development: "docs/development.md"
+  data_dictionary: "docs/data-dictionary.md"
+  confluence: "https://wiki.company.com/project-name"  # Optional
+  diagrams: "docs/diagrams/"
+
+# Classification & Discovery
+tags:
+  - "domain-name"               # e.g., analytics, fraud, customer
+  - "data-type"                 # e.g., real-time, batch, hybrid
+  - "priority"                  # e.g., critical, high, medium, low
+  # Add custom tags for searchability
+
+# Project Status
+status: "development"           # development | staging | production | deprecated
+lifecycle_stage: "active"       # active | maintenance | sunset
+
+# Repository Information (if separate repo)
+repository:
+  url: "https://github.com/company/project-repo"
+  path: "project-name"          # Path within repo (if monorepo)
+  branch: "main"
+
+# Compliance & Governance
+compliance:
+  data_classification: "internal"  # public | internal | confidential | restricted
+  pii_data: false               # Does this handle PII?
+  retention_policy: "standard"  # Retention policy name
+  audit_logging: true           # Enable audit logs
+
+# Cost Management
+cost:
+  budget_code: "DEPT-123"       # Chargeback/budget code
+  estimated_monthly: "$500"     # Estimated monthly cost
+  optimization_level: "standard"  # low | standard | high
+
+# Metadata
+created_at: "2025-12-02"
+created_by: "user@company.com"
+updated_at: "2025-12-02"
+updated_by: "user@company.com"
+
+# Custom Fields (project-specific)
+custom:
+  # Add any project-specific metadata here
+  business_owner: "Product Team"
+  data_steward: "Jane Doe"
+  refresh_frequency: "hourly"

@@ -1,0 +1,177 @@
+# User Analytics Project
+
+name: "user-analytics"
+version: "1.2.0"
+description: "User behavior analytics pipeline processing clickstream data from web and mobile apps"
+
+# Ownership
+owner:
+  team: "data-engineering"
+  slack: "#data-eng-alerts"
+  email: "data-eng@company.com"
+  on_call: "https://pagerduty.com/data-eng"
+
+# Dependencies
+dependencies:
+  data_platform_common: "^0.5.0"
+  python: ">=3.9,<3.12"
+  spark: "3.5.0"
+  delta_lake: "3.0.0"
+
+# Integrations
+integrations:
+  sources:
+    - type: "kafka"
+      name: "user-events"
+      topic: "events.user.clickstream"
+      cluster: "production-kafka"
+      schema_registry: "https://schema-registry.prod"
+      
+    - type: "s3"
+      name: "historical-events"
+      bucket: "s3://landing/user-events"
+      format: "avro"
+      
+  destinations:
+    - type: "delta"
+      name: "user-metrics"
+      path: "s3://curated/user-analytics"
+      
+    - type: "kafka"
+      name: "analytics-results"
+      topic: "analytics.results.user-behavior"
+
+# Resources
+resources:
+  landing:
+    driver: { cpu: "1", memory: "2Gi" }
+    executors: { count: 3, cpu: "2", memory: "4Gi" }
+    
+  transform:
+    driver: { cpu: "2", memory: "4Gi" }
+    executors: { count: 5, cpu: "4", memory: "8Gi" }
+    
+  integration:
+    driver: { cpu: "1", memory: "2Gi" }
+    executors: { count: 2, cpu: "2", memory: "4Gi" }
+
+# Scheduling
+schedule:
+  landing: "*/15 * * * *"        # Every 15 minutes
+  transform: "0 */1 * * *"       # Hourly
+  integration: "0 2 * * *"       # Daily at 2 AM
+
+# SLAs
+sla:
+  latency: "30m"
+  availability: "99.9%"
+  data_quality_threshold: 0.95
+  max_processing_time: "2h"
+
+# Monitoring
+monitoring:
+  prometheus: true
+  grafana_dashboard: "user-analytics-dashboard"
+  alerts:
+    - name: "high-failure-rate"
+      condition: "failure_rate > 0.1"
+      threshold: 0.1
+      severity: "critical"
+      
+    - name: "data-quality-drop"
+      condition: "quality_score < 0.95"
+      threshold: 0.95
+      severity: "warning"
+      
+    - name: "processing-timeout"
+      condition: "duration > 2h"
+      threshold: "2h"
+      severity: "critical"
+
+# Storage
+storage:
+  landing:
+    path: "s3://datacluster-data/landing/user-events"
+    retention: "7d"
+    format: "avro"
+    compression: "snappy"
+    
+  staging:
+    path: "s3://datacluster-data/staging/user-analytics"
+    retention: "3d"
+    format: "parquet"
+    
+  curated:
+    path: "s3://datacluster-data/curated/user-analytics"
+    retention: "permanent"
+    format: "delta"
+    
+  checkpoints:
+    path: "s3://datacluster-data/checkpoints/user-analytics"
+    retention: "30d"
+    
+  archive:
+    path: "s3://datacluster-data/archive/user-analytics"
+    retention: "90d"
+    format: "parquet"
+    compression: "gzip"
+
+# Testing
+testing:
+  unit_tests: true
+  integration_tests: true
+  test_data_generator: "tests/generators/test_data.py"
+  sample_data_path: "tests/fixtures/"
+  test_coverage_threshold: 0.80
+
+# Documentation
+documentation:
+  main: "docs/README.md"
+  architecture: "docs/architecture.md"
+  runbook: "docs/runbook.md"
+  development: "docs/development.md"
+  data_dictionary: "docs/data-dictionary.md"
+
+# Tags
+tags:
+  - "analytics"
+  - "user-behavior"
+  - "real-time"
+  - "critical"
+  - "batch"
+
+# Status
+status: "production"
+lifecycle_stage: "active"
+
+# Repository
+repository:
+  url: "https://github.com/bayleafwalker/datacluster"
+  path: "data-platform/pipelines/user_analytics"
+  branch: "main"
+
+# Compliance
+compliance:
+  data_classification: "internal"
+  pii_data: true                # Handles user IDs
+  retention_policy: "standard"
+  audit_logging: true
+
+# Cost
+cost:
+  budget_code: "DATA-ENG-001"
+  estimated_monthly: "$250"
+  optimization_level: "standard"
+
+# Metadata
+created_at: "2025-11-01"
+created_by: "data-team@company.com"
+updated_at: "2025-12-02"
+updated_by: "data-team@company.com"
+
+# Custom
+custom:
+  business_owner: "Product Analytics Team"
+  data_steward: "Analytics Lead"
+  refresh_frequency: "hourly"
+  critical_dashboard: "https://grafana.company.com/d/user-analytics"

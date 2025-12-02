@@ -1,0 +1,49 @@
+{
+  "type": "record",
+  "name": "LandingRecord",
+  "namespace": "com.datacluster.pipeline_name",
+  "doc": "Raw input data schema - replace with your actual schema",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Unique record identifier"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Event timestamp in milliseconds since epoch"
+    },
+    {
+      "name": "source_system",
+      "type": "string",
+      "doc": "Name of source system"
+    },
+    {
+      "name": "data",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "doc": "Raw data payload as key-value pairs",
+      "default": {}
+    },
+    {
+      "name": "metadata",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "Metadata",
+          "fields": [
+            {"name": "version", "type": "string"},
+            {"name": "ingestion_time", "type": "long", "logicalType": "timestamp-millis"}
+          ]
+        }
+      ],
+      "default": null,
+      "doc": "Optional metadata about the record"
+    }
+  ]
+}

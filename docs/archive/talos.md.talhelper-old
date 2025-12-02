@@ -1,0 +1,73 @@
+# Talos Provisioning with Talhelper
+
+This guide shows how to automate Talos OS cluster creation for **datacluster** using
+[talhelper](https://github.com/budimanjojo/talhelper).
+
+## Flow
+
+1. **Define cluster** → `talos/cluster.yaml`
+2. **Generate** configs → `talhelper genconfig`
+3. **Apply** to nodes → `scripts/talos_apply.sh`
+4. **Fetch kubeconfig** → `talosctl kubeconfig`
+5. **Bootstrap Flux** → `flux bootstrap ...`
+
+## 1. Define cluster
+
+Open *talos/cluster.yaml* and adjust:
+* `endpoint` (VIP or first control-plane IP)
+* Node hostnames & IPs
+* Any extra patches (e.g., Tailscale config, sysctls)
+* Secrets (`SIDEROLABS_PULL_SECRET`) if required
+
+## 2. Generate configs
+
+```bash
+talhelper genconfig -o generated talos/cluster.yaml
+tree generated/
+#  ├─ controlplane.yaml
+#  ├─ worker-0.yaml
+#  ├─ worker-1.yaml
+#  └─ talosconfig
+```
+
+## 3. Apply configs
+
+```bash
+./scripts/talos_apply.sh generated <CP_IP> <WORKER_0_IP> <WORKER_1_IP>
+```
+
+*Control-plane nodes boot into maintenance mode off the Talos ISO / PXE, then
+the script applies configs and boots etcd.*
+
+## 4. Fetch kubeconfig
+
+```bash
+talosctl kubeconfig .
+export KUBECONFIG=$PWD/kubeconfig
+kubectl get nodes
+```
+
+## 5. Bootstrap GitOps
+
+```bash
+flux bootstrap github   --owner=<GitHubUser> --repository=datacluster   --branch=main --path=clusters/hetzner-prod
+```
+
+The cluster will reconcile the rest of the manifests (Spark Operator,
+monitoring stack, etc.) automatically.
+
+---
+
+### Keeping Talos in Git
+
+* Store `cluster.yaml` and any machine patches in Git (optionally encrypted).  
+* You can have a `kustomize-controller` reconcile rendered Talos configs via
+  an `OCIRepository` if you want Talos upgrades shipped from GitOps.
+
+### Upgrading Talos
+
+```bash
+talosctl upgrade --image ghcr.io/siderolabs/installer:v1.8.0 --nodes <ALL_IPS>
+```
+
+Talos reboots nodes one-by-one; Flux later reconciles Kubernetes workloads.

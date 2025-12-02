@@ -1,0 +1,78 @@
+# Datacluster
+
+Cost-optimized Apache Spark platform on Hetzner Cloud with Talos Kubernetes (€10/month).
+
+**Features:**
+- 2-node Kubernetes cluster (Talos OS)
+- Terraform infrastructure as code
+- SOPS-encrypted secrets
+- Tailscale VPN for secure access
+- Spark Operator for batch/streaming jobs
+- GitOps with FluxCD
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/<you>/datacluster.git
+cd datacluster
+
+# 1. Configure secrets
+cp age.key.example age.key  # Add your SOPS key
+cd terraform-v2
+cp terraform.tfvars.example terraform.tfvars.enc
+# Edit and encrypt with: sops --encrypt --in-place terraform.tfvars.enc
+
+# 2. Deploy infrastructure
+terraform init
+terraform apply
+
+# 3. Access cluster via Tailscale VPN
+export KUBECONFIG=$PWD/kubeconfig
+kubectl get nodes
+```
+
+See `terraform-v2/README.md` for detailed setup.
+
+---
+
+## Repository Structure
+
+```
+terraform-v2/       # Active Terraform config (Hetzner infrastructure)
+talos/              # Talos cluster definition (SOPS-encrypted)
+clusters/           # Flux GitOps configs
+infrastructure/     # Platform components (Spark, monitoring, storage)
+pipelines/          # Spark job definitions
+src/                # PySpark application code
+docs/               # Architecture and guides
+```
+
+---
+
+## Prerequisites
+
+- Hetzner Cloud account + API token
+- Tailscale account for VPN access
+- Tools: `terraform`, `kubectl`, `sops`, `age`, `hcloud` CLI
+
+---
+
+## Cost
+
+| Component | Monthly |
+|-----------|---------|
+| CX23 control-plane | €3.75 |
+| CX33 worker | €6.26 |
+| Public IPv4 (×2) | €1.26 |
+| **Total** | **€10.01** |
+
+---
+
+## Documentation
+
+- `terraform-v2/STATUS.md` - Current cluster state
+- `terraform-v2/README.md` - Deployment guide
+- `docs/architecture.md` - System design
+- `docs/encryption.md` - SOPS workflow

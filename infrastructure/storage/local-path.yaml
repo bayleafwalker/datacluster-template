@@ -1,0 +1,49 @@
+---
+# Local path provisioner for temporary storage
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: democratic-csi
+  namespace: storage
+spec:
+  interval: 24h
+  url: https://democratic-csi.github.io/charts/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: local-path-provisioner
+  namespace: storage
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: democratic-csi
+      version: 0.14.x
+      sourceRef:
+        kind: HelmRepository
+        name: democratic-csi
+      interval: 12h
+  values:
+    csiDriver:
+      name: local-hostpath
+    
+    storageClasses:
+      - name: local-path
+        defaultClass: false
+        reclaimPolicy: Delete
+        volumeBindingMode: WaitForFirstConsumer
+        allowVolumeExpansion: false
+        parameters:
+          fsType: ext4
+    
+    driver:
+      config:
+        driver: local-hostpath
+        instance_id: local-path
+        local-hostpath:
+          shareBasePath: "/var/lib/local-path-provisioner"
+          controllerBasePath: "/var/lib/local-path-provisioner"
+          dirPermissionsMode: "0777"
+          dirPermissionsUser: 0
+          dirPermissionsGroup: 0

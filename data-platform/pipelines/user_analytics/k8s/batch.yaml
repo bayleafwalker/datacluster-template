@@ -1,0 +1,69 @@
+---
+# User Analytics Batch Pipeline
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: user-analytics-batch
+  namespace: spark-operator
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: "ghcr.io/bayleafwalker/datacluster-data:0.1.0"
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/pipelines/user_analytics/src/batch_pipeline.py
+  sparkVersion: "3.5.0"
+  
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "1024m"
+    labels:
+      version: "3.5.0"
+      pipeline: "user-analytics"
+      stage: "batch"
+    serviceAccount: spark-operator
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1200m"
+        memory: "1Gi"
+  
+  executor:
+    cores: 1
+    instances: 2
+    memory: "1024m"
+    labels:
+      version: "3.5.0"
+      pipeline: "user-analytics"
+      stage: "batch"
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1500m"
+        memory: "2Gi"
+  
+  sparkConf:
+    "spark.ui.prometheus.enabled": "true"
+    "spark.executor.processTreeMetrics.enabled": "true"
+    "spark.sql.adaptive.enabled": "true"
+  
+  monitoring:
+    exposeDriverMetrics: true
+    exposeExecutorMetrics: true
+    prometheus:
+      jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.17.0.jar"
+      port: 8090

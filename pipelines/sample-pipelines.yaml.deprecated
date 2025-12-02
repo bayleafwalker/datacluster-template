@@ -1,0 +1,152 @@
+---
+# ⚠️ DEPRECATED: Use data-platform/pipelines/user_analytics/k8s/batch.yaml instead
+# Kept for reference only - new deployments use migrated manifests with new Docker image
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: user-analytics-batch-legacy
+  namespace: spark-operator
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: "ghcr.io/bayleafwalker/datacluster-spark:0.1.0"  # OLD IMAGE
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/batch_job.py  # OLD PATH - see data-platform/
+  sparkVersion: "3.5.0"
+  
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  
+  # Driver configuration
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "1024m"
+    labels:
+      version: "3.5.0"
+      app: "user-analytics"
+    serviceAccount: spark-operator
+    
+    # Resource requests/limits (control plane friendly)
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1200m"
+        memory: "1Gi"
+  
+  # Executor configuration
+  executor:
+    cores: 1
+    instances: 2
+    memory: "1024m"
+    labels:
+      version: "3.5.0"
+      app: "user-analytics"
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1500m"
+        memory: "2Gi"
+  
+  # Spark configuration
+  sparkConf:
+    "spark.ui.prometheus.enabled": "true"
+    "spark.executor.processTreeMetrics.enabled": "true"
+    "spark.sql.adaptive.enabled": "true"
+    "spark.dynamicAllocation.enabled": "false"
+  
+  # Monitoring (enables ServiceMonitor auto-creation)
+  monitoring:
+    exposeDriverMetrics: true
+    exposeExecutorMetrics: true
+    prometheus:
+      jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.17.0.jar"
+      port: 8090
+
+---
+# ⚠️ DEPRECATED: Use data-platform/pipelines/event_streaming/k8s/streaming.yaml instead
+# Kept for reference only - new deployments use migrated manifests with new Docker image
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: realtime-event-streaming-legacy
+  namespace: spark-operator
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: "ghcr.io/bayleafwalker/datacluster-spark:0.1.0"  # OLD IMAGE
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/streaming_job.py  # OLD PATH - see data-platform/
+  sparkVersion: "3.5.0"
+  
+  # Streaming jobs run indefinitely
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 999
+    onFailureRetryInterval: 30
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  
+  # Driver configuration
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "1024m"
+    labels:
+      version: "3.5.0"
+      app: "event-streaming"
+      type: "streaming"
+    serviceAccount: spark-operator
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1200m"
+        memory: "1Gi"
+  
+  # Executor configuration (streaming needs persistent executors)
+  executor:
+    cores: 1
+    instances: 2
+    memory: "1024m"
+    labels:
+      version: "3.5.0"
+      app: "event-streaming"
+      type: "streaming"
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1500m"
+        memory: "2Gi"
+  
+  # Spark Streaming configuration
+  sparkConf:
+    "spark.ui.prometheus.enabled": "true"
+    "spark.executor.processTreeMetrics.enabled": "true"
+    "spark.streaming.stopGracefullyOnShutdown": "true"
+    "spark.sql.streaming.schemaInference": "true"
+    "spark.dynamicAllocation.enabled": "false"
+  
+  # Monitoring
+  monitoring:
+    exposeDriverMetrics: true
+    exposeExecutorMetrics: true
+    prometheus:
+      jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.17.0.jar"
+      port: 8090

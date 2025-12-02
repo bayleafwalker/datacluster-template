@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/budimanjojo/talhelper/v3/pkg/config/talhelper-config",
+  "title": "Talhelper Cluster Definition",
+  "description": "JSONSchema for talhelper cluster.yaml files used to generate Talos configurations.",
+  "type": "object",
+  "required": [
+    "clusterName",
+    "talosVersion",
+    "kubernetesVersion",
+    "endpoint",
+    "nodes"
+  ],
+  "properties": {
+    "clusterName": {
+      "type": "string",
+      "description": "Logical name of the cluster."
+    },
+    "talosVersion": {
+      "type": "string",
+      "description": "Talos release to install (e.g., v1.7.2)."
+    },
+    "kubernetesVersion": {
+      "type": "string",
+      "description": "Target Kubernetes version."
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Kubernetes API server VIP (https URL)."
+    },
+    "domain": {
+      "type": "string",
+      "description": "Cluster DNS domain (default cluster.local)."
+    },
+    "cni": {
+      "type": "object",
+      "description": "Container network interface options.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "cilium",
+            "calico",
+            "flannel",
+            "canal",
+            "none"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "patches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "YAML patches applied to all nodes."
+    },
+    "nodes": {
+      "type": "array",
+      "description": "List of nodes in the cluster.",
+      "items": {
+        "type": "object",
+        "required": [
+          "hostname",
+          "ipAddress",
+          "installDisk",
+          "installImageURL"
+        ],
+        "properties": {
+          "hostname": {
+            "type": "string"
+          },
+          "ipAddress": {
+            "type": "string",
+            "pattern": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+          },
+          "installDisk": {
+            "type": "string"
+          },
+          "controlPlane": {
+            "type": "boolean"
+          },
+          "installImageURL": {
+            "type": "string"
+          },
+          "patches": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "secrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

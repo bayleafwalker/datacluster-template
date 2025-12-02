@@ -1,0 +1,61 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: spark-operator
+  namespace: spark-operator
+spec:
+  interval: 24h
+  url: https://kubeflow.github.io/spark-operator
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: spark-operator
+  namespace: spark-operator
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: spark-operator
+      version: 1.2.x
+      sourceRef:
+        kind: HelmRepository
+        name: spark-operator
+      interval: 12h
+  values:
+    webhook:
+      enable: true
+    
+    # Enable Prometheus metrics
+    metrics:
+      enable: true
+      port: 10254
+    
+    # RBAC for SparkApplication CRDs
+    rbac:
+      create: true
+    
+    # ServiceMonitor for Prometheus
+    serviceMonitor:
+      enable: true
+      labels:
+        prometheus: kube-prometheus
+    
+    # Resource limits
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    
+    # Spark image defaults
+    sparkJobNamespace: spark-operator
+    image:
+      repository: ghcr.io/kubeflow/spark-operator
+      tag: v1beta2-1.4.3-3.5.0
+    
+    # Log level
+    logLevel: info

@@ -1,0 +1,36 @@
+# Data Platform Requirements
+
+## Core Dependencies
+pyspark==3.5.0
+delta-spark==3.0.0
+
+## Connectors
+confluent-kafka==2.3.0  # Kafka producer/consumer
+boto3==1.34.0  # S3 operations
+psycopg2-binary==2.9.9  # PostgreSQL JDBC
+pymysql==1.1.0  # MySQL connector
+
+## Data Quality & Validation
+great-expectations==0.18.0  # Advanced data quality
+avro-python3==1.11.3  # Avro schema support
+jsonschema==4.20.0  # JSON schema validation
+
+## Utilities
+python-dotenv==1.0.0  # Environment configuration
+pyyaml==6.0.1  # YAML config files
+faker==22.0.0  # Test data generation
+hypothesis==6.96.0  # Property-based testing
+
+## Monitoring
+prometheus-client==0.19.0  # Custom metrics
+py4j==0.10.9.7  # Spark JVM bridge
+
+## Testing
+pytest==7.4.3
+pytest-spark==0.6.0
+chispa==0.9.4  # Spark DataFrame assertions
+
+## Type Checking & Linting
+mypy==1.8.0
+black==23.12.1
+flake8==7.0.0

@@ -1,0 +1,96 @@
+# SparkApplication Template
+# Copy this file and customize for your pipeline
+
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: my-spark-job  # CHANGE: Unique job name
+  namespace: spark-operator
+spec:
+  type: Python  # or Scala, Java
+  pythonVersion: "3"
+  mode: cluster
+  image: "ghcr.io/bayleafwalker/datacluster-spark:0.1.0"  # CHANGE: Your image:tag
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/your_script.py  # CHANGE: Your Python script
+  sparkVersion: "3.5.0"
+  
+  # CHANGE: For batch jobs use Never or OnFailure, for streaming use OnFailure
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  
+  # Driver configuration
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "1024m"  # CHANGE: Based on your workload
+    labels:
+      version: "3.5.0"
+      app: "my-app"  # CHANGE: Your app label
+    serviceAccount: spark-operator
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1200m"
+        memory: "1Gi"
+  
+  # Executor configuration
+  executor:
+    cores: 1
+    instances: 2  # CHANGE: Number of executors
+    memory: "1024m"  # CHANGE: Based on your workload
+    labels:
+      version: "3.5.0"
+      app: "my-app"  # CHANGE: Your app label
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1500m"
+        memory: "2Gi"
+  
+  # Spark configuration
+  sparkConf:
+    "spark.ui.prometheus.enabled": "true"
+    "spark.executor.processTreeMetrics.enabled": "true"
+    "spark.sql.adaptive.enabled": "true"
+    # ADD: Additional Spark configs as needed
+  
+  # IMPORTANT: Enable monitoring for Prometheus metrics
+  monitoring:
+    exposeDriverMetrics: true
+    exposeExecutorMetrics: true
+    prometheus:
+      jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.17.0.jar"
+      port: 8090
+  
+  # OPTIONAL: Volume mounts for persistent storage
+  # volumes:
+  #   - name: data
+  #     persistentVolumeClaim:
+  #       claimName: spark-data-pvc
+  # driver:
+  #   volumeMounts:
+  #     - name: data
+  #       mountPath: /data
+  # executor:
+  #   volumeMounts:
+  #     - name: data
+  #       mountPath: /data
+  
+  # OPTIONAL: S3 credentials (if using Hetzner Object Storage)
+  # hadoopConf:
+  #   "fs.s3a.endpoint": "https://hel1.your-objectstorage.hetzner.com"
+  #   "fs.s3a.access.key": "YOUR_ACCESS_KEY"
+  #   "fs.s3a.secret.key": "YOUR_SECRET_KEY"
+  #   "fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"

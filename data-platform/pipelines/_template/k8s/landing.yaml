@@ -1,0 +1,90 @@
+---
+# SparkApplication for Landing Stage
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: pipeline-name-landing
+  namespace: spark-operator
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: "ghcr.io/<user>/datacluster-data:0.1.0"  # TODO: Update image
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/pipelines/_template/src/landing.py  # TODO: Update path
+  sparkVersion: "3.5.0"
+  
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "2048m"
+    labels:
+      version: "3.5.0"
+      pipeline: "pipeline-name"
+      stage: "landing"
+    serviceAccount: spark-operator
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1200m"
+        memory: "2Gi"
+  
+  executor:
+    cores: 1
+    instances: 2
+    memory: "2048m"
+    labels:
+      version: "3.5.0"
+      pipeline: "pipeline-name"
+      stage: "landing"
+    
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "1500m"
+        memory: "2Gi"
+  
+  sparkConf:
+    "spark.ui.prometheus.enabled": "true"
+    "spark.executor.processTreeMetrics.enabled": "true"
+    "spark.sql.adaptive.enabled": "true"
+    "spark.sql.adaptive.coalescePartitions.enabled": "true"
+    # S3 configuration
+    "spark.hadoop.fs.s3a.endpoint": "https://hel1.your-objectstorage.hetzner.com"
+    "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "spark.hadoop.fs.s3a.path.style.access": "true"
+  
+  # S3 credentials from secret
+  hadoopConf:
+    "fs.s3a.access.key": "${S3_ACCESS_KEY}"
+    "fs.s3a.secret.key": "${S3_SECRET_KEY}"
+  
+  # Monitoring
+  monitoring:
+    exposeDriverMetrics: true
+    exposeExecutorMetrics: true
+    prometheus:
+      jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.17.0.jar"
+      port: 8090
+  
+  # Environment variables from secrets
+  driver:
+    envFrom:
+      - secretRef:
+          name: s3-credentials
+  executor:
+    envFrom:
+      - secretRef:
+          name: s3-credentials
