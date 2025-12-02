@@ -1,7 +1,7 @@
 # Datacluster
 
 > **🎯 This is a PUBLIC TEMPLATE repository**  
-> This repository contains **NO REAL SECRETS** - all sensitive data has been removed or replaced with placeholders.  
+> All sensitive data has been removed or replaced with placeholders, replace with own values.  
 > Fork this repository and follow the Getting Started guide to deploy your own cluster.
 
 ---
