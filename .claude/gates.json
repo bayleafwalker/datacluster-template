@@ -1,0 +1,11 @@
+{
+  "$comment": "Operations in THIS repo needing more than routine autonomy. Absence of a match means routine: no prompt. Seeded empty on purpose -- add entries only for operations this project genuinely gates.",
+  "version": 1,
+  "default": "routine",
+  "tiers": {
+    "routine": "Agent performs autonomously, no prompt. Default for everything unlisted, including advancing main, PRs and releases.",
+    "operator-approved": "Owner approves first; the agent then performs it.",
+    "operator-actioned": "A human performs it. Reserved for destructive mutation of live shared infrastructure."
+  },
+  "gated": []
+}
