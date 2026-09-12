@@ -123,6 +123,11 @@ rm terraform.tfvars   # always clean up
 
 ## Cluster access
 
+Node addresses stay placeholders in a template. In a cluster repository cut from
+it, get the real ones from `terraform -chdir=terraform-v2 output
+control_plane_public_ips`, or from the decrypted `talosconfig`. Do not paste a
+live address back into a tracked file.
+
 ```bash
 # Kubernetes
 export KUBECONFIG="$REPO_ROOT"/clusters/.kube/config
