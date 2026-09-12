@@ -55,7 +55,7 @@ kubectl apply -k my-new-pipeline/k8s/overlays/prod/
 See comprehensive documentation:
 - **Project Strategy**: `../../docs/data-platform/project-separation-strategy.md`
 - **Quick Reference**: `../../docs/data-platform/PROJECT-QUICK-REF.md`
-- **Agent Instructions**: `../../.github/copilot-instructions-data.md`
+- **Agent Instructions**: `../../docs/data-platform/agent-guide.md`
 
 ## 🔧 Project Standards
 

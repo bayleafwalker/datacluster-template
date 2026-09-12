@@ -15,7 +15,7 @@ Platform engineering, Kubernetes cluster, Terraform infrastructure:
 - **[encryption.md](infrastructure/encryption.md)** - SOPS encryption setup, key management, rotation
 - **[upgrade-guide.md](infrastructure/upgrade-guide.md)** - Kubernetes and Talos version upgrades
 
-**Agent Instructions**: See `../.github/copilot-instructions-infrastructure.md`
+**Agent Instructions**: See `infrastructure/agent-guide.md`
 
 ---
 
@@ -32,24 +32,24 @@ Data pipeline development, Spark jobs, analytics:
 - **[pipelines.md](data-platform/pipelines.md)** - Pipeline examples and patterns
 - **[pipeline-testing.md](data-platform/pipeline-testing.md)** - Testing strategies
 
-**Agent Instructions**: See `../.github/copilot-instructions-data.md`
+**Agent Instructions**: See `data-platform/agent-guide.md`
 
 ---
 
 ## 🚀 Getting Started
 
 ### For Infrastructure Work:
-1. Read [Infrastructure Agent Instructions](../.github/copilot-instructions-infrastructure.md)
+1. Read [Infrastructure Agent Instructions](infrastructure/agent-guide.md)
 2. Review [architecture.md](infrastructure/architecture.md)
 3. Set up encryption: [encryption.md](infrastructure/encryption.md)
 
 ### For Data Platform Work:
-1. Read [Data Platform Agent Instructions](../.github/copilot-instructions-data.md)
+1. Read [Data Platform Agent Instructions](data-platform/agent-guide.md)
 2. Review [project-separation-strategy.md](data-platform/project-separation-strategy.md)
 3. Check out examples in `../data-platform/projects/`
 
 ### Common Instructions:
-See [Main Agent Instructions](../.github/copilot-instructions.md) for:
+See [AGENTS.md](../AGENTS.md) for:
 - GitOps deployment principles
 - Encryption requirements
 - Standard tooling

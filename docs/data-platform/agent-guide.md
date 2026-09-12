@@ -2,7 +2,7 @@
 
 **Context**: Data pipeline development, Spark jobs, analytics
 
-[← Back to Main Instructions](./copilot-instructions.md)
+[← Back to AGENTS.md](../../AGENTS.md)
 
 ---
 
@@ -691,4 +691,4 @@ bad_df = df.filter(~quality_condition)
 
 ---
 
-[← Back to Main Instructions](./copilot-instructions.md) | [Infrastructure Track →](./copilot-instructions-infrastructure.md)
+[← Back to AGENTS.md](../../AGENTS.md) | [Infrastructure Track →](../infrastructure/agent-guide.md)

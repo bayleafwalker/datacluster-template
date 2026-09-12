@@ -2,7 +2,7 @@
 
 **Context**: Platform engineering, Kubernetes cluster management, Terraform infrastructure
 
-[← Back to Main Instructions](./copilot-instructions.md)
+[← Back to AGENTS.md](../../AGENTS.md)
 
 ---
 
@@ -470,4 +470,4 @@ terraform force-unlock <LOCK_ID>
 
 ---
 
-[← Back to Main Instructions](./copilot-instructions.md) | [Data Platform Track →](./copilot-instructions-data.md)
+[← Back to AGENTS.md](../../AGENTS.md) | [Data Platform Track →](../data-platform/agent-guide.md)
